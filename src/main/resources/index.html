@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>getUserMedia</title>
+    <!-- MPEG-DASH 視聴用 -->
+    <script src="https://cdn.dashjs.org/latest/dash.all.debug.js"></script>
+</head>
+
+<body>
+    <div class="parent">
+        <button id="live_button">配信開始</button>
+        <button id="watch_button">視聴開始</button>
+        <video id="video" width="640" height="320" muted autoplay />
+    </div>
+</body>
+
+<style>
+    .parent {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+</style>
+
+<script>
+
+    // @ts-check
+
+    // 今回利用するコンテナフォーマット、コーデック
+    const MIME_TYPE = `video/webm; codecs="vp9"`
+    // 録画するやつ
+    let mediaRecorder
+    // WebMデータが細切れになって来るので一時的に保存する
+    let chunks = []
+    // 映像を送る間隔
+    const SEND_INTERVAL_MS = 3_000
+
+    const recordButton = document.getElementById('live_button')
+    const watchButton = document.getElementById('watch_button')
+    const videoElement = document.getElementById('video')
+
+    // サーバーに映像を送る
+    const sendSegment = (segment) => {
+        const form = new FormData()
+        form.append('data', segment)
+        fetch('/api/upload', { method: 'POST', body: form })
+    }
+
+    // 録画を開始して、canvasに描画する
+    const startRec = async () => {
+        // 画面をキャプチャーしてくれるやつ
+        const displayMedia = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true })
+        // パソコンの画面を流す
+        mediaRecorder = new MediaRecorder(displayMedia, { mimeType: MIME_TYPE })
+        // 録画データが着たら呼ばれる。サーバーに送る
+        mediaRecorder.ondataavailable = (ev) => {
+            sendSegment(ev.data)
+        }
+        // 録画開始
+        mediaRecorder.start(SEND_INTERVAL_MS)
+        // とりあえず video要素 で再生
+        videoElement.srcObject = displayMedia
+    }
+
+    // 配信ボタン投下時
+    recordButton.onclick = () => {
+        startRec()
+    }
+
+    // 視聴ボタン投下時
+    // dash.js による MPEG-DASH の再生を試みる
+    watchButton.onclick = () => {
+        const url = "/manifest.mpd";
+        const player = dashjs.MediaPlayer().create();
+        player.initialize(videoElement, url, true);
+    }
+
+</script>
+
+</html>

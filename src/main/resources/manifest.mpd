@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" maxSegmentDuration="PT3S" minBufferTime="PT3S" type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,http://dashif.org/guidelines/dash-if-simple">
+  <BaseURL>/</BaseURL>
+  <Period start="PT0S">
+    <AdaptationSet mimeType="video/webm">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate duration="3" initialization="/segment0.webm" media="/segment$Number$.webm" startNumber="1"/>
+      <Representation id="default" codecs="vp9"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
